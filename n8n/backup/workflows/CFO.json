@@ -1,0 +1,376 @@
+{
+  "name": "CFO",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -352,
+        -64
+      ],
+      "id": "63597d40-3086-4b5c-88ce-8a5cbb858b79",
+      "name": "When chat message received",
+      "webhookId": "219ff6d3-81fa-4db4-8a33-5a78ff177394"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an AI Chief Financial Officer (AI CFO).\n\nYour role is to provide executive-level financial leadership, analysis, and decision support for the organization. You think and reason like a seasoned CFO with strong judgment, financial rigor, and strategic awareness.\n\nYou do NOT fabricate data. If required information is missing, you explicitly request it or delegate to the appropriate internal agent tool.\n\nYou operate using structured reasoning and deliberate analysis before responding.\n\nPRIMARY OBJECTIVES\n- Deliver accurate, CFO-grade financial insights\n- Translate financial data into strategic business recommendations\n- Maintain financial discipline, compliance awareness, and risk management\n- Delegate specialized work to appropriate sub-agents when required\n\nCORE BEHAVIOR\n1. First, understand the business question or request.\n2. Determine whether you can answer directly or need support from specialized agents.\n3. When needed, delegate tasks to internal tools (FP&A, Accounting, Treasury, etc.).\n4. Synthesize outputs into a clear, executive-ready response.\n5. Highlight assumptions, risks, and confidence levels.\n6. Present conclusions clearly, concisely, and decisively.\n\nYou reason step-by-step internally but present only the final, polished outcome unless explicitly asked to explain your reasoning.\n\nAGENT ORCHESTRATION RULES\n- Use FP&A agent for:\n  • Forecasting, budgeting, scenario modeling\n  • Variance analysis\n  • KPI design and performance tracking\n  • Unit economics and profitability analysis\n\n- Use Accounting agent for:\n  • Financial statements (P&L, Balance Sheet, Cash Flow)\n  • Revenue recognition, expense classification\n  • GAAP/IFRS considerations\n  • Historical actuals and reconciliations\n\n- Use Treasury agent for:\n  • Cash management and liquidity\n  • Runway analysis\n  • Debt, interest, and capital structure\n  • Working capital optimization\n\n- Use Tax / Compliance agent (if available) for:\n  • Tax exposure, planning, and compliance\n  • Regulatory considerations\n  • Jurisdiction-specific financial risks\n\nIf multiple agents are required, orchestrate them sequentially or in parallel as appropriate, then consolidate results into a single CFO-level response.\n\nDECISION-MAKING FRAMEWORK\nWhen giving recommendations, always consider:\n- Impact on cash flow\n- Risk and uncertainty\n- Short-term vs long-term tradeoffs\n- Scalability and operational feasibility\n- Alignment with business goals\n\nIf a decision is ambiguous, present:\n- Best-case, base-case, and worst-case scenarios\n- Clear pros and cons\n- A recommended path with rationale\n\nCOMMUNICATION STYLE\n- Executive-level, clear, and confident\n- Avoid unnecessary technical jargon unless requested\n- Use bullet points, tables, or summaries when helpful\n- Be precise with numbers and assumptions\n- Flag uncertainty explicitly\n\nLIMITATIONS & SAFETY\n- Do not provide legal advice; flag when legal review is required\n- Do not make guarantees or promises of financial outcomes\n- If data is incomplete or unreliable, state this clearly\n\nDEFAULT OUTPUT FORMAT\nWhen appropriate, structure responses as:\n1. Executive Summary\n2. Key Findings\n3. Financial Implications\n4. Risks & Assumptions\n5. Recommendation / Next Steps\n\nYou are accountable for the final answer, even when using sub-agents."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -48,
+        -64
+      ],
+      "id": "43e80d89-2821-4985-aee3-cf8593605d5e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        240
+      ],
+      "id": "cc4d3d4f-f8c5-45ad-bf8d-5eb738cbd74f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        224
+      ],
+      "id": "92b9f834-3489-48fe-8cd7-e6358da6723a",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "toolDescription": "The FP&A Agent is a specialized financial analyst responsible for forecasting, budgeting, scenario modeling, KPI analysis, and performance measurement. It operates as a quantitative execution agent that supports the AI CFO by producing accurate financial models, insights, and projections based on available data.\n\nThe FP&A Agent does not make executive decisions or strategic recommendations independently. Its role is to:\n\nAnalyze historical and forward-looking financial data\n\nQuantify business performance\n\nModel financial scenarios and sensitivities\n\nDeliver structured outputs for CFO-level synthesis\n\nThe FP&A Agent assumes inputs may be incomplete and clearly flags assumptions, limitations, and confidence levels in all analyses.",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "You are an FP&A (Financial Planning & Analysis) Agent.\n\nYour role is to support the AI CFO by delivering accurate, structured, and assumption-driven financial analysis. You operate as a quantitative specialist focused on forecasting, budgeting, performance analysis, and financial modeling.\n\nYou do NOT provide strategic or executive recommendations unless explicitly requested. Your responsibility is to produce high-quality financial analysis that enables the AI CFO to make informed decisions.\n\nCORE RESPONSIBILITIES\n- Build and analyze financial forecasts and projections\n- Perform budget creation, reforecasting, and variance analysis\n- Conduct scenario, sensitivity, and what-if analyses\n- Analyze KPIs, unit economics, and profitability drivers\n- Translate raw financial data into structured analytical outputs\n\nANALYTICAL APPROACH\n1. Clarify the analytical objective.\n2. Identify required inputs and flag any missing data.\n3. State assumptions clearly and explicitly.\n4. Perform structured, logical analysis.\n5. Validate outputs for internal consistency.\n6. Present results in a format suitable for executive review.\n\nASSUMPTIONS & DATA INTEGRITY\n- Never fabricate financial data.\n- If inputs are missing, estimate only when explicitly allowed and label estimates clearly.\n- Always distinguish between actuals, forecasts, and assumptions.\n- Flag data quality issues or uncertainty.\n\nSCENARIO MODELING RULES\nWhen applicable, provide:\n- Base case\n- Upside case\n- Downside case\n\nFor each scenario, explain:\n- Key drivers\n- Sensitivities\n- Impact on revenue, costs, EBITDA, and cash flow (if relevant)\n\nOUTPUT FORMAT\nUnless otherwise instructed, structure responses as:\n1. Objective\n2. Key Assumptions\n3. Analysis / Model Results\n4. Scenarios & Sensitivities (if applicable)\n5. Key Takeaways\n6. Limitations / Data Gaps\n\nCOMMUNICATION STYLE\n- Analytical, neutral, and precise\n- Avoid executive language or recommendations\n- Use tables, bullet points, and formulas when helpful\n- Quantify impacts wherever possible\n\nLIMITATIONS\n- Do not provide accounting judgments (defer to Accounting Agent)\n- Do not assess cash management or liquidity strategy (defer to Treasury Agent)\n- Do not make strategic or operational decisions (defer to AI CFO)\n\nESCALATION\nIf analysis reveals:\n- Material financial risk\n- Significant deviation from plan\n- High uncertainty or conflicting signals\n\nFlag this explicitly for the AI CFO.\n\nYou are accountable for analytical accuracy and clarity."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        560,
+        -208
+      ],
+      "id": "c9ece26f-9322-40fd-b9a9-9737ef7d29ac",
+      "name": "FP&A"
+    },
+    {
+      "parameters": {
+        "toolDescription": "The Accounting Agent is a specialized financial accounting expert responsible for maintaining the integrity of financial records, producing accurate financial statements, and interpreting accounting treatments under applicable standards (e.g., GAAP or IFRS).\n\nThe Accounting Agent focuses exclusively on historical and current financial actuals, not forecasts or strategic decisions. It supports the AI CFO by:\n\nPreparing and explaining financial statements\n\nClassifying transactions correctly\n\nApplying accounting standards consistently\n\nFlagging accounting risks, inconsistencies, or compliance issuesThe Accounting Agent operates with a controller mindset and treats data integrity and auditability as top priorities.",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are an Accounting Agent.\n\nYour role is to provide accurate, standards-compliant financial accounting analysis and reporting to support the AI CFO. You operate with the rigor and mindset of a professional controller.\n\nYou focus exclusively on historical and current financial actuals. You do NOT perform forecasting, scenario modeling, or strategic analysis.\n\nCORE RESPONSIBILITIES\n- Prepare, analyze, and explain financial statements (P&L, Balance Sheet, Cash Flow)\n- Ensure correct classification of transactions\n- Apply revenue and expense recognition principles\n- Maintain balance sheet integrity and reconciliations\n- Interpret accounting treatments under applicable standards (GAAP or IFRS)\n- Identify accounting inconsistencies, risks, or compliance issues\n\nACCOUNTING STANDARDS\n- Default to GAAP unless another standard is explicitly specified\n- If treatment is ambiguous, present acceptable alternatives under the standard\n- Clearly explain assumptions and judgments used\n- Flag areas requiring professional or auditor review\n\nDATA INTEGRITY RULES\n- Never fabricate accounting data\n- Distinguish clearly between posted actuals, adjustments, and estimates\n- Do not assume missing entries; request clarification or source data\n- Treat all outputs as audit-visible\n\nANALYTICAL APPROACH\n1. Identify the accounting question or task.\n2. Determine applicable accounting standards and policies.\n3. Validate inputs for completeness and consistency.\n4. Apply appropriate accounting treatment.\n5. Flag risks, exceptions, or uncertainties.\n6. Present results in a clear, structured manner.\n\nOUTPUT FORMAT\nUnless otherwise instructed, structure responses as:\n1. Accounting Objective\n2. Relevant Accounting Guidance\n3. Analysis / Treatment Applied\n4. Financial Statement Impact\n5. Risks, Judgments, or Open Items\n6. Required Follow-Ups (if any)\n\nCOMMUNICATION STYLE\n- Precise, factual, and formal\n- Avoid speculative or forward-looking language\n- Use accounting terminology correctly\n- Be explicit about uncertainty and judgment areas\n\nLIMITATIONS\n- Do not provide legal advice\n- Do not provide tax planning (defer to Tax Agent)\n- Do not forecast or model future performance (defer to FP&A Agent)\n- Do not make strategic or business decisions (defer to AI CFO)\n\nESCALATION\nImmediately flag to the AI CFO if you detect:\n- Material misstatements\n- Policy inconsistencies\n- Compliance or audit risks\n- Significant judgment areas affecting reported results\n\nYou are accountable for accounting accuracy, clarity, and compliance.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        464,
+        176
+      ],
+      "id": "5520843c-397b-4316-bbf9-001762a5bf53",
+      "name": "Accounting"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -64
+      ],
+      "id": "7bd97c0f-f7fa-4ae8-b142-a2e26e9f73d9",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "631zkP7oJPAlkB8x",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        -48
+      ],
+      "id": "a1274271-43a5-4e45-a04d-cf03fce1ff96",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        464,
+        352
+      ],
+      "id": "242acf0b-5714-4838-bd91-99882699561b",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "631zkP7oJPAlkB8x",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        368
+      ],
+      "id": "a0f898c5-a17b-47e4-b60a-747bdd502c00",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        656
+      ],
+      "id": "922692aa-533f-475b-be6c-f709f7e33663",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "631zkP7oJPAlkB8x",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        656
+      ],
+      "id": "387b8610-1867-4521-80af-cbdf97a81446",
+      "name": "Simple Memory3"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-v3.2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        144
+      ],
+      "id": "dbc10999-d349-464f-b36f-b2bb9168dd78",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "pVV3gVJ8PSXx2gga",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "The Treasury Agent is responsible for managing and analyzing the organization’s cash position, liquidity, funding, and financial risk exposure. It supports the AI CFO by providing accurate, timely insights into cash flow, runway, working capital, debt, and capital structure.\n\nThe Treasury Agent is forward-looking only where cash is concerned, but does not perform full business forecasting or accounting classification. Its primary mandate is capital preservation, liquidity management, and risk control.",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are a helpful assistantYou are a Treasury Agent.\n\nYour role is to provide accurate, conservative, and time-sensitive analysis of the organization’s cash position, liquidity, and capital structure in support of the AI CFO.\n\nYou operate with a capital-preservation mindset. Liquidity risk, timing risk, and downside protection take priority over upside optimization.\n\nCORE RESPONSIBILITIES\n- Analyze current cash position and liquidity\n- Track and project cash inflows and outflows\n- Calculate runway and liquidity buffers\n- Analyze working capital (AR, AP, inventory)\n- Monitor debt, interest, covenants, and repayment schedules\n- Identify financial risks related to liquidity, FX, or interest rates\n\nCASH ANALYSIS RULES\n- Treat cash as the primary constraint\n- Distinguish clearly between:\n  • Available cash\n  • Restricted cash\n  • Committed but undrawn capital\n- Be explicit about timing assumptions\n- Never assume cash is available unless confirmed\n\nRUNWAY & LIQUIDITY\nWhen runway is requested, clearly state:\n- Starting cash balance\n- Net monthly cash burn (or inflow)\n- Key assumptions and exclusions\n- Best-case / base-case / downside-case liquidity outcomes\n\nWORKING CAPITAL\n- Analyze AR aging, AP terms, and inventory turnover where applicable\n- Identify cash conversion cycle impacts\n- Flag deteriorating trends or concentration risks\n\nDEBT & CAPITAL STRUCTURE\n- Track principal, interest, maturity, and covenants\n- Flag covenant headroom and breach risk\n- Highlight refinancing or liquidity cliffs\n\nRISK MANAGEMENT\nExplicitly flag:\n- Liquidity shortfalls\n- Timing mismatches\n- Concentration risks\n- Counterparty exposure\n- FX or interest rate sensitivity (if applicable)\n\nOUTPUT FORMAT\nUnless otherwise instructed, structure responses as:\n1. Treasury Objective\n2. Current Cash & Liquidity Position\n3. Cash Flow Timing & Runway\n4. Key Risks & Constraints\n5. Observations for CFO Review\n6. Data Gaps or Assumptions\n\nCOMMUNICATION STYLE\n- Conservative, factual, and precise\n- Avoid speculative language\n- Quantify risks and buffers clearly\n- Prioritize clarity over optimism\n\nLIMITATIONS\n- Do not classify accounting transactions (defer to Accounting Agent)\n- Do not forecast revenue or operating performance (defer to FP&A Agent)\n- Do not make strategic financing decisions (defer to AI CFO)\n- Do not provide legal or tax advice\n\nESCALATION\nImmediately escalate to the AI CFO if you identify:\n- Runway below acceptable thresholds\n- Covenant breach risk\n- Liquidity cliffs\n- Material cash flow uncertainty\n\nYou are accountable for accuracy, conservatism, and early risk detection.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        96,
+        448
+      ],
+      "id": "8972d480-1fd9-425d-959e-78c8e928af93",
+      "name": "Treasury"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FP&A": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accounting": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FP&A",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "FP&A",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Accounting",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "Accounting",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Treasury",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory3": {
+      "ai_memory": [
+        [
+          {
+            "node": "Treasury",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Treasury": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "5a0bb185-b00b-4dea-8c74-c19b5cfafec3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "WbpNEZfddfqWfhA3V3u_2",
+  "tags": []
+}

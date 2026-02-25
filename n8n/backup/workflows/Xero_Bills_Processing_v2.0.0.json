@@ -1,0 +1,1256 @@
+{
+  "name": "Xero Bills Processing",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "hasAttachments": true
+        },
+        "options": {
+          "downloadAttachments": false
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3180,
+        300
+      ],
+      "id": "94750ee0-16bd-48cc-8f8e-c123104d6315",
+      "name": "Incoming E-mail",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "cFFYGMDbj0ObsgpT",
+          "name": "Microsoft Outlook - Kris.turk@hybrit.co.nz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messageAttachment",
+        "operation": "getAll",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -2960,
+        300
+      ],
+      "id": "40dea624-2bd5-4ed0-95d6-29b86f45b4a0",
+      "name": "List Attachments",
+      "webhookId": "322ff112-e6fd-4ae1-8254-bbb215b418ac",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "cFFYGMDbj0ObsgpT",
+          "name": "Microsoft Outlook - Kris.turk@hybrit.co.nz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -2740,
+        300
+      ],
+      "id": "1ae6d3e5-0a6c-4d06-b26d-e52961a27222",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "maxPages": 6
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -2080,
+        300
+      ],
+      "id": "f70a5b0e-46f0-468c-b0e0-3400173d9661",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Extract from File').item.json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "reference",
+              "description": "Invoice  Reference"
+            },
+            {
+              "name": "invoice_issueing_company",
+              "description": "Company who is seeking payment\n\nThis will never be \"HybrIT Services NZ\" or \"HybrIT Services NZ Ltd\" as that is the receiving company.",
+              "required": true
+            },
+            {
+              "name": "tax",
+              "type": "number",
+              "description": "Amount of tax included in invoice",
+              "required": true
+            },
+            {
+              "name": "total",
+              "type": "number",
+              "description": "total amount paid or due",
+              "required": true
+            },
+            {
+              "name": "issue_date",
+              "type": "date",
+              "description": "date invoice was issued"
+            },
+            {
+              "name": "due_date",
+              "type": "date",
+              "description": "date payment is due.\n\nIf not found default to 20th of the month",
+              "required": true
+            },
+            {
+              "name": "invoice_number",
+              "description": "Invoice Number",
+              "required": true
+            },
+            {
+              "name": "issued_to",
+              "description": "Company the invoice is issued to (Usually HybrIT Services NZ)"
+            },
+            {
+              "name": "currency",
+              "description": "3 letter currency code, e.g. NZD, GBP",
+              "required": true
+            },
+            {
+              "name": "tax_rating",
+              "description": "=This will be either NONE (no tax) or INPUT2 (15% GST)",
+              "required": true
+            },
+            {
+              "name": "summary",
+              "description": "1 line summary of all invoice contents. e.g. \"M365 Licenses\"",
+              "required": true
+            },
+            {
+              "name": "account_code",
+              "type": "number",
+              "description": "=Do not invent a new account code - Only use a code from the Chart of Accounts\n\nChart of Accounts:\n\n{{ \n  $('Xero - Get Chart of Accounts').item.json.Accounts\n    .filter(account => account && account.Code && Number(account.Code) >= 300 && Number(account.Code) <= 495)\n    .map(account => `${account.Code} - ${account.Name} - ${account.Description || \"\"}`)\n    .join('\\n')\n}}\n\n---\nDo not use a code that is not in the above list.\n\n",
+              "required": true
+            },
+            {
+              "name": "sub_total",
+              "type": "number",
+              "description": "Pre Tax Subtotal",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        300
+      ],
+      "id": "17273f8f-31e5-4cdf-9fba-08a47c5e7abc",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.text }}"
+            },
+            {
+              "content": "=You are an sorting assistant. Your job is to label documents as Invoices or Not invoices by applying a label true or false.\n\nThe label should be applied to a key called isInvoice\n\ne.g.\n\n{\n  \"isInvoice\": true\n}",
+              "role": "system"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1860,
+        300
+      ],
+      "id": "569b917e-07f8-4b3c-a0c6-1d7d38c46361",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "JWH8krmAV5tnbw45",
+          "name": "OpenAi - HybrIT - Xero Invoice Processing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "getAll",
+        "organizationId": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7",
+        "options": {
+          "where": "=EmailAddress!=null&&EmailAddress==\"{{ $('Incoming E-mail').item.json.from }}\""
+        }
+      },
+      "type": "n8n-nodes-base.xero",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        500
+      ],
+      "id": "97f4b9bc-b455-4692-b8c7-98398b7b5613",
+      "name": "Get Account Details",
+      "alwaysOutputData": true,
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "nYHsp3h8Rglldupz",
+          "name": "Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "organizationId": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7",
+        "type": "ACCPAY",
+        "contactId": "={{ $json.ContactID }}",
+        "lineItemsUi": {
+          "lineItemsValues": [
+            {
+              "description": "={{ $('Information Extractor').item.json.output.summary }}",
+              "unitAmount": "={{ $('Information Extractor').item.json.output.sub_total }}",
+              "itemCode": "={{ null }}",
+              "accountCode": "={{ $json.account_code !== undefined && $json.account_code !== null && $json.account_code !== '' ? $json.account_code : $('Information Extractor').item.json.output.account_code }}",
+              "taxType": "={{ $('Information Extractor').item.json.output.tax_rating }}",
+              "taxAmount": "={{ $('Information Extractor').item.json.output.tax }}",
+              "lineAmount": "={{ $('Information Extractor').item.json.output.sub_total }}"
+            }
+          ]
+        },
+        "additionalFields": {
+          "currency": "={{ $('Information Extractor').item.json.output.currency }}",
+          "date": "={{ $('Information Extractor').item.json.output.issue_date }}",
+          "dueDate": "={{ $('Information Extractor').item.json.output.due_date }}",
+          "invoiceNumber": "={{ $('Information Extractor').item.json.output.invoice_number }}",
+          "reference": "={{ $('Information Extractor').item.json.output.reference }}",
+          "status": "DRAFT"
+        }
+      },
+      "type": "n8n-nodes-base.xero",
+      "typeVersion": 1,
+      "position": [
+        840,
+        300
+      ],
+      "id": "7202afda-99a5-4849-a414-af3b13460938",
+      "name": "Create Invoice",
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "nYHsp3h8Rglldupz",
+          "name": "Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messageAttachment",
+        "operation": "download",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Incoming E-mail').item.json.id }}",
+          "mode": "id"
+        },
+        "attachmentId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -2300,
+        300
+      ],
+      "id": "0261458f-39da-466e-994f-940656a7eab8",
+      "name": "Download Attachment",
+      "webhookId": "d4c0a6c2-3049-4dba-ae81-7a6a298a5a0e",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "cFFYGMDbj0ObsgpT",
+          "name": "Microsoft Outlook - Kris.turk@hybrit.co.nz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.xero.com/api.xro/2.0/Invoices/{{ $('Create Invoice').item.json.InvoiceID }}/Attachments/{{ $('Download Attachment').item.json.name.replace(/_/g, '-').replace(/[^a-zA-Z0-9.-]/g, '') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        300
+      ],
+      "id": "d8d69665-9cae-4f47-9ac8-80ef20628746",
+      "name": "Xero - Upload Attachment",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "SXGZrsXKDHn9KD6c",
+          "name": "Xero - Oauth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "organizationId": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7",
+        "name": "={{ $('Information Extractor').item.json.output.invoice_issueing_company }}",
+        "additionalFields": {
+          "emailAddress": "={{ $('Incoming E-mail').item.json.from }}"
+        }
+      },
+      "type": "n8n-nodes-base.xero",
+      "typeVersion": 1,
+      "position": [
+        320,
+        600
+      ],
+      "id": "d6cd985f-7e7b-42e5-8121-c4fbdfdb7831",
+      "name": "Create Contact",
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "nYHsp3h8Rglldupz",
+          "name": "Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messageAttachment",
+        "operation": "download",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Incoming E-mail').item.json.id }}",
+          "mode": "id"
+        },
+        "attachmentId": {
+          "__rl": true,
+          "value": "={{ $('Download Attachment').item.json.id }}",
+          "mode": "id"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ],
+      "id": "f5b12611-f8ed-45b5-96fa-46968158469d",
+      "name": "Download Attachment for Xero",
+      "webhookId": "d4c0a6c2-3049-4dba-ae81-7a6a298a5a0e",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "cFFYGMDbj0ObsgpT",
+          "name": "Microsoft Outlook - Kris.turk@hybrit.co.nz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $('Incoming E-mail').item.json.id }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "AAMkAGZkYmI5MGRhLTlmMjUtNGEzYS04NjVhLWQwYTI0MjI2OTRiMAAuAAAAAAAo88b24UGYSYwQg8D557tJAQAY8G-_cATFQZHcGKXYYPqQAAQvyusrAAA=",
+          "mode": "list",
+          "cachedResultName": "processed",
+          "cachedResultUrl": "https://outlook.office365.com/mail/AAMkAGZkYmI5MGRhLTlmMjUtNGEzYS04NjVhLWQwYTI0MjI2OTRiMAAuAAAAAAAo88b24UGYSYwQg8D557tJAQAY8G%2F_cATFQZHcGKXYYPqQAAQvyusrAAA%3D"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        300
+      ],
+      "id": "cad52236-621b-4a91-a8e6-c7ae6518cfb6",
+      "name": "Move E-mail to Processed",
+      "webhookId": "89c7fac6-89f3-4d9b-a62a-3f694e8ff543",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "cFFYGMDbj0ObsgpT",
+          "name": "Microsoft Outlook - Kris.turk@hybrit.co.nz"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1140,
+        600
+      ],
+      "id": "df0c6b42-c32a-4a1e-97f2-82fd224dbffb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "JWH8krmAV5tnbw45",
+          "name": "OpenAi - HybrIT - Xero Invoice Processing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b0c37d98-59c3-4958-b575-082e032db89f",
+              "leftValue": "={{ $json.message.content.isInvoice }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1480,
+        300
+      ],
+      "id": "c932041d-295a-4051-9fd5-1290e509c0ae",
+      "name": "If Invoice"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d4503118-7c01-4e59-b0e8-d9a3e38e4bac",
+              "leftValue": "={{ $('Incoming E-mail').item.json.from }}",
+              "rightValue": "messaging-service@post.xero.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "92db27a7-194f-44f4-9d6a-d45f2cb39758",
+              "leftValue": "={{ $('Incoming E-mail').item.json.from }}",
+              "rightValue": "kris@kristurk.com",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "4671925e-8470-481c-b1e5-9e65050160d8",
+              "leftValue": "={{ $('Incoming E-mail').item.json.from }}",
+              "rightValue": "kris.turk@hybrit.co.nz",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "5f65c305-b169-4acd-b673-a94335cfd319",
+              "leftValue": "={{ $('Incoming E-mail').item.json.from }}",
+              "rightValue": "accounts@hybrit.co.nz",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -660,
+        300
+      ],
+      "id": "936fb012-becc-4365-adaa-d6438c2025b0",
+      "name": "If Non Specific Email"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.xero.com/api.xro/2.0/Contacts?SearchTerm={{ $('Information Extractor').item.json.output.invoice_issueing_company }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -440,
+        100
+      ],
+      "id": "22e2e912-b02e-422c-a264-c4e3cc9b670e",
+      "name": "Xero - Search Supplier",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "SXGZrsXKDHn9KD6c",
+          "name": "Xero - Oauth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "organizationId": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7",
+        "name": "={{ $('Information Extractor').item.json.output.invoice_issueing_company }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.xero",
+      "typeVersion": 1,
+      "position": [
+        320,
+        200
+      ],
+      "id": "034583be-0f97-477c-abea-895109e37da1",
+      "name": "Create Contact - No Email",
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "nYHsp3h8Rglldupz",
+          "name": "Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7985a3a7-80be-4256-81a3-1e3b547f23a8",
+              "leftValue": "={{ $json.ContactID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        500
+      ],
+      "id": "39a04107-3798-4528-a440-d538db91bd4c",
+      "name": "If Contact Exists (Email)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7985a3a7-80be-4256-81a3-1e3b547f23a8",
+              "leftValue": "={{ $('Xero - Search Supplier').item.json.Contacts[0].ContactID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        100
+      ],
+      "id": "399dc86c-0ca2-4e88-bb23-83edd55f589a",
+      "name": "If Contact Exists (Name Match)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "37878341-99ff-46b6-a199-7b060a667a1d",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": ".pdf",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "6dc0f57d-de5e-4521-b256-ed9900f414c5",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": ".PDF",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2520,
+        300
+      ],
+      "id": "9ff6f9ae-a363-4126-8603-157b22037a9c",
+      "name": "If PDF"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.xero.com/api.xro/2.0/Accounts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1260,
+        300
+      ],
+      "id": "e58c1a53-fc6f-4efd-ac78-ded1eadd964f",
+      "name": "Xero - Get Chart of Accounts",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "SXGZrsXKDHn9KD6c",
+          "name": "Xero - Oauth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.xero.com/api.xro/2.0/Invoices?ContactIDs={{ $('Get Account Details').item.json.ContactID }}&Status=PAID&page=1&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        400
+      ],
+      "id": "e757a3b4-67ec-41bc-82db-84439e8dc612",
+      "name": "Xero - Check Invoice Coding1",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "SXGZrsXKDHn9KD6c",
+          "name": "Xero - Oauth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.xero.com/api.xro/2.0/Invoices?ContactIDs={{ $('Xero - Search Supplier').item.json.Id }}&Status=PAID&page=1&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "8a6af9d0-7dd8-4d60-b1b9-3421c78623e7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        0
+      ],
+      "id": "4d632bb3-3552-4819-93ac-3bd5fc434951",
+      "name": "Xero - Check Invoice Coding",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "SXGZrsXKDHn9KD6c",
+          "name": "Xero - Oauth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3597cbef-f8d4-4f53-8d06-f54347a26fb1",
+              "name": "ContactID",
+              "value": "={{ $('Get Account Details').item.json.ContactID }}",
+              "type": "string"
+            },
+            {
+              "id": "428ae8b5-6ca8-416c-81ea-911ac176b949",
+              "name": "account_code",
+              "value": "={{ ($json.Invoices?.[0]?.LineItems?.[0]?.AccountCode !== undefined) ? $json.Invoices[0].LineItems[0].AccountCode : null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        400
+      ],
+      "id": "a8e9ff6f-0b18-4df5-bf37-f1c66ee11537",
+      "name": "Set ContactID and Account Code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1d8f409-98ea-41b6-a8ff-7fd82c1fb804",
+              "name": "ContactID",
+              "value": "={{ $('Xero - Search Supplier').item.json.Contacts[0].ContactID }}",
+              "type": "string"
+            },
+            {
+              "id": "b1e9b07b-b31e-4d1e-a14a-f6ec197e7014",
+              "name": "account_code",
+              "value": "={{ ($json.Invoices?.[0]?.LineItems?.[0]?.AccountCode !== undefined) ? $json.Invoices[0].LineItems[0].AccountCode : null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        0
+      ],
+      "id": "fd99aaf3-212f-4a9d-92d9-579fb04e0687",
+      "name": "Set Contact ID & Account Code"
+    },
+    {
+      "parameters": {
+        "content": "## Setup Notes\n### Authentications to setup\n\n- Mailbox\n   - If on hosted n8n simply connect to mailbox and provide credentials\n    - If Self hosted n8n will need to setup an App registration first with a Client secret. The App ID and secret are required and then should be able to complete a sign in workflow\n\n- Open AI API Key\n\n- Xero Application\n    - Need to setup Xero Application and complete authentication in one of the Xero nodes (first).\n    - Use the Xero nodes to identify your Xero tenant id\n    - Update the Xero tenant ID that is hard coded into the Custom HTTP Nodes.\n    - Create a custom Oauth2 credential for Xero custom http nodes\n\n### Update wording/parameters\n\n- Update the e-mail addresses 'if non specific e-mail node, I sometimes forward invoices to myself or they come from generic addresses like xero-mail\n\n- In the information Extractor node I specifically instruct it not to set my own business (HybrIT) as the issueing company (as I am the recieving company) update to match your busienss\n",
+        "height": 900,
+        "width": 580,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3860,
+        -120
+      ],
+      "id": "896b3fab-abb4-467a-b36e-26e998e8368a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Classify filter to only process invoices\n",
+        "height": 900,
+        "width": 1900,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3240,
+        -120
+      ],
+      "id": "2328dd6d-a96d-4f12-9a35-b679c9f88a7b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Process Invoices\n",
+        "height": 900,
+        "width": 2280,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        -120
+      ],
+      "id": "9de3371c-7536-4864-b941-6611fd1a068a",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Extract Invoice Details\n",
+        "height": 900,
+        "width": 760,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1300,
+        -120
+      ],
+      "id": "10769ecd-8057-4244-89e9-a9d81a6afa06",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Incoming E-mail": {
+      "main": [
+        [
+          {
+            "node": "List Attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Attachments": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "If PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "If Non Specific Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "If Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Account Details": {
+      "main": [
+        [
+          {
+            "node": "If Contact Exists (Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Invoice": {
+      "main": [
+        [
+          {
+            "node": "Download Attachment for Xero",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Attachment": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact": {
+      "main": [
+        [
+          {
+            "node": "Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Attachment for Xero": {
+      "main": [
+        [
+          {
+            "node": "Xero - Upload Attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero - Upload Attachment": {
+      "main": [
+        [
+          {
+            "node": "Move E-mail to Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Invoice": {
+      "main": [
+        [
+          {
+            "node": "Xero - Get Chart of Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Non Specific Email": {
+      "main": [
+        [
+          {
+            "node": "Xero - Search Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Account Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero - Search Supplier": {
+      "main": [
+        [
+          {
+            "node": "If Contact Exists (Name Match)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact - No Email": {
+      "main": [
+        [
+          {
+            "node": "Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Contact Exists (Email)": {
+      "main": [
+        [
+          {
+            "node": "Xero - Check Invoice Coding1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Contact Exists (Name Match)": {
+      "main": [
+        [
+          {
+            "node": "Xero - Check Invoice Coding",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Contact - No Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If PDF": {
+      "main": [
+        [
+          {
+            "node": "Download Attachment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero - Get Chart of Accounts": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero - Check Invoice Coding1": {
+      "main": [
+        [
+          {
+            "node": "Set ContactID and Account Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero - Check Invoice Coding": {
+      "main": [
+        [
+          {
+            "node": "Set Contact ID & Account Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set ContactID and Account Code": {
+      "main": [
+        [
+          {
+            "node": "Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Contact ID & Account Code": {
+      "main": [
+        [
+          {
+            "node": "Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "55846419-417d-4ad5-9225-de2ebc77648a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c726ecedf9f074093f90b40e11202f4f4a78582a1a643b1ceb0eda734ed6dfeb"
+  },
+  "id": "MvezYW7OG7UsvHSP",
+  "tags": []
+}

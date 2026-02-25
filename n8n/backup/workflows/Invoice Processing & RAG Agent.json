@@ -1,0 +1,1249 @@
+{
+  "name": "Workflow 1-2 Invoice Extraction and Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sandboxinvoice",
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -384,
+        32
+      ],
+      "id": "34b2643a-d7fc-4846-b0a3-8e9f6ac40395",
+      "name": "Webhook",
+      "webhookId": "b9fbe82b-2934-4fa0-98f6-fd67e82edd27"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=You're an invoice processing assistant. Your goal is to analyze the document of different forms of invoices and extract the required information.\n\nYou'll be receiving the file in a binary file format and you need to find the following information:\n\n- Invoice Number\n- Date of invoice (MM/DD/YYYY)\n- Total Amount\n- Vendor Name\n- Vendor Address\n- Vendor Email\n- Vendor Phone Number\n- Payment Method\n- Line Items\n\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -64
+      ],
+      "id": "12e392c4-70e3-4e1a-a3a6-bebf553ccdab",
+      "name": "Analyze document",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "DTmCIiJF0yPA0NEH",
+          "name": "WG N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://app.smartsuite.com/api/v1/applications/[tabl;eID]/records/{{ $json.body.record_id }}/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization"
+            },
+            {
+              "name": "ACCOUNT-ID"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        32
+      ],
+      "id": "a0ce0059-db01-4926-83db-d1ed0d59f1ec",
+      "name": "Get SS Record"
+    },
+    {
+      "parameters": {
+        "url": "=https://app.smartsuite.com/api/v1/shared-files/{{ $json.s515308dcd[0].handle }}/url/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization"
+            },
+            {
+              "name": "ACCOUNT-ID"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        -64
+      ],
+      "id": "bdbd74c3-7bec-4c3f-a7eb-b627ba2b1a12",
+      "name": "Get File URL"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        -64
+      ],
+      "id": "152b0b80-87ac-4acc-9957-401ca603e92f",
+      "name": "File Download"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a6f3382e-69fa-48a5-b3de-d64683d09486",
+              "leftValue": "={{ $json.s515308dcd[0].file_type }}",
+              "rightValue": "pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        16,
+        32
+      ],
+      "id": "52aed7e9-c948-418f-8d8c-b4a843a0a2e3",
+      "name": "If PDF"
+    },
+    {
+      "parameters": {
+        "url": "=https://app.smartsuite.com/api/v1/shared-files/{{ $json.s515308dcd[0].handle }}/url/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization"
+            },
+            {
+              "name": "ACCOUNT-ID"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        176
+      ],
+      "id": "c20a91fe-8d10-46fd-b970-bf6c85272a9b",
+      "name": "Get File URL1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        176
+      ],
+      "id": "2d705d97-cdb9-4e3c-b4c3-8d80f8833079",
+      "name": "File Download1"
+    },
+    {
+      "parameters": {
+        "content": "## PDF Route",
+        "height": 192,
+        "width": 736,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -112
+      ],
+      "id": "07559b26-163f-4163-b0f5-81be401cb7bc",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Image Route",
+        "height": 224,
+        "width": 736,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        112
+      ],
+      "id": "680b761a-c95a-47b6-9348-3a43e81c3a92",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.content.parts[0].text }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n\t\"invoice_number\": \"7637821\",\n    \"date\": \"10/14/2024\",\n    \"vendor_name\": \"Barone Sanitation\",\n    \"vendor_phone\": \"9019215433\",\n    \"vendor_email\": \"accounting@barone.com\",\n    \"vendor_address\": {\n        \"location_address\": \"15549 West 166th Street\",\n        \"location_address2\": \"\",\n        \"location_city\": \"Olathe\",\n        \"location_state\": \"Kansas\",\n        \"location_zip\": \"66062\",\n        \"location_country\": \"United States\",\n        \"location_longitude\": \"-94.76601199999999\",\n        \"location_latitude\": \"38.827365\",\n        \"sys_root\": \"15549 West 166th Street, Olathe, Kansas, 66062, United States\"\n    },\n    \"line_items\": \"**Line Items**:\\n 1. **Description**: (PAC) NUT- FLANGE M22-1.5 (Bin: M4-B), **Quantity**: 10.00, **Rate**: 6.14, **Extended Amount**: 61.40\\n 2. **Description**: (PAC) STUD-WHEEL (Bin: M4-B), **Quantity**: 10.00, **Rate**: 10.91,\",\n    \"payment_method\": \"CASH\",\n    \"amount\": 1483.33\n}",
+        "options": {
+          "systemPromptTemplate": "=You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\n\nMake sure you include new lines in the line items output.\n\nEach line item should follow this approximate structure:\nItem: 001\nPart Number: L4-7303550\nDescription: GREEN THERMISTER CAPS FT321 \nOrdered: 3.00 \nUOM: EA \nShipped: 3.00 \nPrice: 24.98 \nTotal: 74.94\n\nItem: 003 \nPart Number: V1-0617565 \nDescription: ADJUSTING BOLT ASSEMBLY-STEEL #20040A001 INCLUDES ITEMS 7,8,9 & 10 \nOrdered: 5.00 \nUOM: EA \nShipped: 5.00 \nPrice: 33.04 \nTotal: 165.20\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        32
+      ],
+      "id": "ad2bfd64-6d4f-484a-a84f-e4c89ad8b446",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        208
+      ],
+      "id": "c64fc439-c310-42f3-8d3b-413507ec2677",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YM9NQM3O22BxhVGe",
+          "name": "Wind Growth OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=You're an invoice processing assistant. Your goal is to analyze the document of different forms of invoices and extract the required information.\n\nYou'll be receiving the file in an image format and you need to find the following information:\n\n- Invoice Number\n- Date of invoice (MM/DD/YYYY)\n- Total Amount\n- Vendor Name\n- Vendor Address\n- Vendor Email\n- Vendor Phone Number\n- Payment Method\n- Line Items\n\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        736,
+        176
+      ],
+      "id": "b229f253-85b6-427a-b678-3806aafcf5a9",
+      "name": "Analyze image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "DTmCIiJF0yPA0NEH",
+          "name": "WG N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## INVOICE ANALYSIS",
+        "height": 640,
+        "width": 1888,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -224
+      ],
+      "id": "6eab6eb6-5018-4eef-a18b-7af14dde385f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "invoices",
+          "mode": "list",
+          "cachedResultName": "invoices"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "invoice_number": "={{ $json.output.invoice_number }}",
+            "date": "={{ $json.output.date }}",
+            "truck": "={{ $('Get SS Record').item.json.s723a964ed }}",
+            "amount": "={{ $json.output.amount }}",
+            "id": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "invoice_number",
+              "displayName": "invoice_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "truck",
+              "displayName": "truck",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1312,
+        32
+      ],
+      "id": "e1058c44-0506-4877-90c9-b284f45427a2",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "UXVhiBwE6wmlga5X",
+          "name": "vid073 db"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e15867ed-7ca8-4b5f-bc73-30b759fcd3f1",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        928
+      ],
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "UXVhiBwE6wmlga5X",
+          "name": "vid073 db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a9a245e-f1a1-4282-bb02-a81ffe629f0f",
+              "name": "chatInput",
+              "value": "={{ $json?.chatInput || $json.body.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "b80831d8-c653-4203-8706-adedfdb98f77",
+              "name": "sessionId",
+              "value": "={{ $json?.sessionId || $json.body.sessionId}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c35064d3-9b08-42e7-b703-84285cd9e6d0",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -512,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a financial assistant that helps answer questions about expense invoices stored in a Postgres database.\n\nDATABASE SCHEMA:\nThe 'invoices' table contains the following columns:\n- invoice_number (text): Unique identifier for each invoice\n- date (date): Invoice date\n- truck (text): Truck identifier in format \"NUMBER\" (e.g., \"088\", \"010\")\n  - When users refer to \"truck 88\" or \"truck 10\", match using LIKE '088' or LIKE '010' to find the specific truck\n  - The truck number is always at the start and has 3 numbers.\n- amount (numeric): Invoice amount in dollars\n- vendor (text): Vendor/supplier name\n\nAVAILABLE TOOLS:\n- Postgres Chat Memory: Stores conversation context for follow-up questions\n- Query Document Rows: Executes SQL queries on the invoices table\n\nQUERY STRATEGY:\n1. For aggregation questions (sum, average, count, max, min), use SQL queries via Query Document Rows\n2. For specific invoice lookups or filtering by exact matches, use SQL queries\n3. When users mention a truck by number (e.g., \"truck 88\"), use LIKE '088' to match the truck identifier\n4. For exploratory questions (\"show me recent invoices\"), use SQL with appropriate LIMIT clauses\n5. For semantic searches or fuzzy vendor name matching, use the memory/retrieval tools first\n\nRESPONSE GUIDELINES:\n- Always show your work: explain what query you're running and why\n- Format currency amounts with dollar signs and two decimal places\n- When showing multiple results, present them in a clear, organized format\n- If no results are found, clearly state this - never fabricate data\n- CRITICAL: When a user mentions a month without a year, ALWAYS use the current year. For example, if today is {{ $now.format('YYYY-MM-DD') }}, then \"August\" means \"August {{ $now.year }}\".\n- If a question is ambiguous (e.g., \"recent\" without a timeframe), ask for clarification or state your assumptions\n\nCurrent date: {{ $now.format('YYYY-MM-DD') }}\nCurrent year: {{ $now.year }}\n\nEXAMPLE QUERIES:\n- \"What's the total spent in August?\" → SQL: SELECT SUM(amount) FROM invoices WHERE date BETWEEN '2025-08-01' AND '2025-08-31';\n- \"Show invoices from ABC Vendor\" → SQL with WHERE clause\n- \"How much did we spend on truck 88 in August?\" → SQL: SELECT SUM(amount) FROM invoices WHERE truck LIKE '088' AND date BETWEEN '2025-08-01' AND '2025-08-31';\n- \"Which truck has the highest expenses?\" → SQL with GROUP BY and ORDER BY\n- \"Find invoice #12345\" → SQL with WHERE invoice_number = '12345'\n\nCRITICAL: When writing SQL queries, write them as a SINGLE LINE with spaces between clauses. Do NOT include line breaks or \\n characters.\n\nExample:\nCORRECT: SELECT SUM(amount) as total FROM invoices WHERE date BETWEEN '2025-08-01' AND '2025-08-31';\nWRONG: SELECT SUM(amount)\\nFROM invoices\\nWHERE date BETWEEN '2025-08-01' AND '2025-08-31';\n"
+        }
+      },
+      "id": "70db294b-867f-4d1d-ad2c-bd262d92bb04",
+      "name": "RAG AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        -304,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "=Run a SQL query on the invoices table. Use this tool to query invoice data with standard SQL syntax.\n\nTABLE SCHEMA:\n- invoice_number (text)\n- date (date)\n- truck (text)\n- amount (numeric)\n\nQUERY EXAMPLES (write queries on single lines or with proper line breaks):\n\n1. Get total spending:\nSELECT SUM(amount) as total FROM invoices;\n\n2. Get spending by truck:\nSELECT truck, SUM(amount) as total_spent FROM invoices GROUP BY truck ORDER BY total_spent DESC;\n\n3. Find invoices in date range:\nSELECT * FROM invoices WHERE date BETWEEN '2024-01-01' AND '2024-12-31' ORDER BY date DESC;\n\n4. Find specific invoice:\nSELECT * FROM invoices WHERE invoice_number = 'INVOICENUMBER';\n\n5. Get monthly spending:\nSELECT DATE_TRUNC('month', date) as month, SUM(amount) as total_spent FROM invoices GROUP BY DATE_TRUNC('month', date) ORDER BY month DESC;\n\nIMPORTANT:\n- Write SQL queries on a single line or ensure proper formatting\n- Always use the table name 'invoices'\n- Use standard PostgreSQL syntax",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('sql_query') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -48,
+        928
+      ],
+      "id": "e018b6b6-a366-4b50-918e-333a24cdec7b",
+      "name": "Query Document Rows",
+      "credentials": {
+        "postgres": {
+          "id": "UXVhiBwE6wmlga5X",
+          "name": "vid073 db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "🤖 Ask me anything about invoices, trucks, expenses or vendors.",
+        "options": {
+          "inputPlaceholder": "\"How much did we spend on truck 88 in August?\"",
+          "subtitle": "Start a chat. I'm here to help you 24/7.",
+          "customCss": ":root {\n  /* Modern Purple Gradient Theme */\n  --chat--color-primary: #667eea;\n  --chat--color-primary-shade-50: #5a6fd8;\n  --chat--color-primary-shade-100: #4e5fc6;\n  --chat--color-secondary: #764ba2;\n  --chat--color-secondary-shade-50: #6a4391;\n  --chat--color-white: #ffffff;\n  --chat--color-light: #f8fafc;\n  --chat--color-light-shade-50: #e2e8f0;\n  --chat--color-light-shade-100: #cbd5e1;\n  --chat--color-medium: #94a3b8;\n  --chat--color-dark: #1e293b;\n  --chat--color-disabled: #94a3b8;\n  --chat--color-typing: #475569;\n\n  /* Modern Font */\n  --chat--font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n\n  /* Spacing & Borders */\n  --chat--spacing: 1.25rem;\n  --chat--border-radius: 12px;\n  --chat--transition-duration: 0.2s;\n\n  /* Window Dimensions */\n  --chat--window--width: 420px;\n  --chat--window--height: 650px;\n  --chat--window--bottom: 1.5rem;\n  --chat--window--right: 1.5rem;\n  --chat--window--z-index: 9999;\n  --chat--window--border: none;\n  --chat--window--border-radius: 20px;\n  --chat--window--margin-bottom: var(--chat--spacing);\n\n  /* Header - Purple Gradient */\n  --chat--header-height: auto;\n  --chat--header--padding: 1.75rem;\n  --chat--header--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  --chat--header--color: var(--chat--color-white);\n  --chat--header--border-top: none;\n  --chat--header--border-bottom: none;\n  --chat--header--border-left: none;\n  --chat--header--border-right: none;\n  --chat--heading--font-size: 1.5rem;\n  --chat--subtitle--font-size: 0.95rem;\n  --chat--subtitle--line-height: 1.5;\n\n  /* Message Styles */\n  --chat--message--font-size: 0.95rem;\n  --chat--message--padding: 1rem 1.25rem;\n  --chat--message--border-radius: 16px;\n  --chat--message-line-height: 1.6;\n  --chat--message--margin-bottom: 1rem;\n  --chat--message--bot--background: var(--chat--color-white);\n  --chat--message--bot--color: var(--chat--color-dark);\n  --chat--message--bot--border: 1px solid var(--chat--color-light-shade-50);\n  --chat--message--user--background: #667eea;\n  --chat--message--user--color: #ffffff;\n  --chat--message--user--border: none;\n  --chat--message--pre--background: rgba(0, 0, 0, 0.05);\n  --chat--messages-list--padding: 1.5rem;\n\n  /* Toggle Button */\n  --chat--toggle--size: 64px;\n  --chat--toggle--width: var(--chat--toggle--size);\n  --chat--toggle--height: var(--chat--toggle--size);\n  --chat--toggle--border-radius: 50%;\n  --chat--toggle--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  --chat--toggle--hover--background: #5a6fd8;\n  --chat--toggle--active--background: #4e5fc6;\n  --chat--toggle--color: var(--chat--color-white);\n\n  /* Input Area */\n  --chat--textarea--height: 52px;\n  --chat--textarea--max-height: 200px;\n  --chat--input--font-size: 0.95rem;\n  --chat--input--border: 2px solid var(--chat--color-light-shade-50);\n  --chat--input--border-radius: 12px;\n  --chat--input--padding: 1rem 1.25rem;\n  --chat--input--background: var(--chat--color-white);\n  --chat--input--text-color: var(--chat--color-dark);\n  --chat--input--line-height: 1.5;\n  --chat--input--placeholder--font-size: var(--chat--input--font-size);\n  --chat--input--border-active: 2px solid #667eea;\n  --chat--input--left--panel--width: 2.5rem;\n\n  /* Button Styles */\n  --chat--button--color: var(--chat--color-white);\n  --chat--button--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  --chat--button--padding: 0.75rem 1.5rem;\n  --chat--button--border-radius: 10px;\n  --chat--button--hover--color: var(--chat--color-white);\n  --chat--button--hover--background: #5a6fd8;\n  --chat--close--button--color-hover: var(--chat--color-primary);\n\n  /* Send Button */\n  --chat--input--send--button--background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n  --chat--input--send--button--color: var(--chat--color-white);\n  --chat--input--send--button--background-hover: #5a6fd8;\n  --chat--input--send--button--color-hover: var(--chat--color-white);\n  --chat--input--file--button--background: var(--chat--color-white);\n  --chat--input--file--button--color: #667eea;\n  --chat--input--file--button--background-hover: var(--chat--color-light);\n  --chat--input--file--button--color-hover: #5a6fd8;\n  --chat--files-spacing: 0.5rem;\n\n  /* Body and Footer */\n  --chat--body--background: var(--chat--color-light);\n  --chat--footer--background: var(--chat--color-white);\n  --chat--footer--color: var(--chat--color-dark);\n}\n\n/* Custom Class Overrides */\n.chat-message {\n  max-width: 75%;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n}\n\n.chat-window {\n  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);\n}\n\n/* Force proper user message styling - try all possible class names */\n.chat-message-user,\n.chat-message.user,\n[data-role=\"user\"],\n.message-user {\n  background: #667eea !important;\n  color: #ffffff !important;\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        1328,
+        704
+      ],
+      "id": "a9954674-78ea-4d85-93be-1ecfbe69b952",
+      "name": "When chat message received",
+      "webhookId": "058487f3-9eba-4a2c-aeb4-501e873c5a31"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4.1-mini",
+        "options": {}
+      },
+      "id": "759ec498-cccd-40cb-91a4-ffe0f8aae246",
+      "name": "OpenAI Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        928
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YM9NQM3O22BxhVGe",
+          "name": "Wind Growth OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## SQL RAG Invoices",
+        "height": 528,
+        "width": 928,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        576
+      ],
+      "id": "45cfab6c-d44c-4c26-83bf-006d17a1af60",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a9a245e-f1a1-4282-bb02-a81ffe629f0f",
+              "name": "chatInput",
+              "value": "={{ $json?.chatInput || $json.body.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "b80831d8-c653-4203-8706-adedfdb98f77",
+              "name": "sessionId",
+              "value": "={{ $json?.sessionId || $json.body.sessionId}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d5d9fe8a-b8d3-47d9-b38d-e73c4750aa6f",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a financial assistant that helps answer questions about expense invoices stored in a Smartsuite database.\n\nThe structure is as follow:\n-First Name\n-Customer ID\n-Amount"
+        }
+      },
+      "id": "6ccc53e8-024d-447e-ba27-b1c8bd27178a",
+      "name": "RAG AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        768,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4.1-mini",
+        "options": {}
+      },
+      "id": "4f817c1e-c8c9-4a8c-95e1-72acc3193eba",
+      "name": "OpenAI Chat Model3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        688,
+        928
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YM9NQM3O22BxhVGe",
+          "name": "Wind Growth OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Agent with Smartsuite",
+        "height": 528,
+        "width": 928,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        256,
+        576
+      ],
+      "id": "342ea696-52ea-44fb-944f-c8b261fca0d5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://app.smartsuite.com/api/v1/applications/[table]/records/list/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization"
+            },
+            {
+              "name": "Account-Id"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        976,
+        944
+      ],
+      "id": "f68b124a-993f-4e8d-8390-220de074229b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.smartsuite.com/api/v1/applications/68c836caf4a5b15cab74e2a3/records/list/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token 3af171b228d64f6e918e36ea826914ad4fa1d120"
+            },
+            {
+              "name": "Account-Id",
+              "value": "sedycnvh"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        1696
+      ],
+      "id": "76c069a4-72d6-4421-8e2b-354aa93fa97d",
+      "name": "SmartSuite Search Records"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a9a245e-f1a1-4282-bb02-a81ffe629f0f",
+              "name": "chatInput",
+              "value": "={{ $json?.chatInput || $json.body.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "b80831d8-c653-4203-8706-adedfdb98f77",
+              "name": "sessionId",
+              "value": "={{ $json?.sessionId || $json.body.sessionId}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "74e80013-566d-4766-a041-bcd7acf22ac0",
+      "name": "Edit Fields2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1600,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a financial assistant that helps answer questions about expense invoices stored in a Postgres database.\n\nDATABASE SCHEMA:\nThe 'testrecords' table contains the following columns:\n- first_name (text): Client name\n- amount (numeric): Invoice amount in dollars\n- customer_ID (text): customer id\n\nAVAILABLE TOOLS:\n- Query Document Rows: Executes SQL queries on the invoices table\n\nQUERY STRATEGY:\n1. For aggregation questions (sum, average, count, max, min), use SQL queries via Query Document Rows\n2. For specific invoice lookups or filtering by exact matches, use SQL queries\n3. For exploratory questions (\"show me recent invoices\"), use SQL with appropriate LIMIT clauses\n4. For semantic searches or fuzzy vendor name matching, use the memory/retrieval tools first\n\nRESPONSE GUIDELINES:\n- Always show your work: explain what query you're running and why\n- Format currency amounts with dollar signs and two decimal places\n- When showing multiple results, present them in a clear, organized format\n- If no results are found, clearly state this - never fabricate data\n- CRITICAL: When a user mentions a month without a year, ALWAYS use the current year. For example, if today is {{ $now.format('YYYY-MM-DD') }}, then \"August\" means \"August {{ $now.year }}\".\n- If a question is ambiguous (e.g., \"recent\" without a timeframe), ask for clarification or state your assumptions\n\nCurrent date: {{ $now.format('YYYY-MM-DD') }}\nCurrent year: {{ $now.year }}\n\nCRITICAL: When writing SQL queries, write them as a SINGLE LINE with spaces between clauses. Do NOT include line breaks or \\n characters.\n\n"
+        }
+      },
+      "id": "e78f51b4-7029-4367-9511-21889f0e6847",
+      "name": "RAG AI Agent2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        1808,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4.1-mini",
+        "options": {}
+      },
+      "id": "6a229d02-d7da-4265-8fd8-7ea19e6229e0",
+      "name": "OpenAI Chat Model4",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        928
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YM9NQM3O22BxhVGe",
+          "name": "Wind Growth OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## SQL RAG Agent 1k records",
+        "height": 528,
+        "width": 928
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        576
+      ],
+      "id": "1fb44398-c9b4-4b18-a6ef-a35aab192df5",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://app.smartsuite.com/api/v1/applications/68c836caf4a5b15cab74e2a3/records/list/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token 3af171b228d64f6e918e36ea826914ad4fa1d120"
+            },
+            {
+              "name": "Account-Id",
+              "value": "sedycnvh"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        1136,
+        1440
+      ],
+      "id": "6f0651ec-2ead-4d50-9517-c8ff1ea56f18",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "testrecords",
+          "mode": "list",
+          "cachedResultName": "testrecords"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "first_name": "={{ $json.title }}",
+            "customer_ID": "={{ $json.s81208e155 }}",
+            "amount": "={{ $json.sc1e532e19 }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_ID",
+              "displayName": "customer_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1024,
+        1696
+      ],
+      "id": "d2fcafb9-f8ea-45aa-a1d3-1280aa4a09f1",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "UXVhiBwE6wmlga5X",
+          "name": "vid073 db"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        400,
+        1696
+      ],
+      "id": "0ddf75cf-ebd5-49e8-afa4-41367f50f1dc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        816,
+        1696
+      ],
+      "id": "ea990543-318c-4c45-9963-c74925495447",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "=Run a SQL query on the testrecords table. Use this tool to query invoice data with standard SQL syntax.\n\nThe 'testrecords' table contains the following columns:\n- first_name (text): Client name\n- amount (numeric): Invoice amount in dollars\n- customer_ID (text): customer id\n\nQUERY EXAMPLES (write queries on single lines or with proper line breaks):\n\n1. Get total spending:\nSELECT SUM(amount) as total FROM testrecords;\n\n2. Get spending by first name:\nSELECT first_name, SUM(amount) as total_spent FROM testrecords GROUP BY truck ORDER BY total_spent DESC;\n\nIMPORTANT:\n- Write SQL queries on a single line or ensure proper formatting\n- Always use the table name 'invoices'\n- Use standard PostgreSQL syntax",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('sql_query') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        1968,
+        912
+      ],
+      "id": "40a28feb-59fd-4457-b393-260bf0015afb",
+      "name": "Query Document Rows1",
+      "credentials": {
+        "postgres": {
+          "id": "mzrWEyFPynJNOwLT",
+          "name": "alaska"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get SS Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze document": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get SS Record": {
+      "main": [
+        [
+          {
+            "node": "If PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File URL": {
+      "main": [
+        [
+          {
+            "node": "File Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Download": {
+      "main": [
+        [
+          {
+            "node": "Analyze document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If PDF": {
+      "main": [
+        [
+          {
+            "node": "Get File URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get File URL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File URL1": {
+      "main": [
+        [
+          {
+            "node": "File Download1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Download1": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Document Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "RAG AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "RAG AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "SmartSuite Search Records": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "SmartSuite Search Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Document Rows1": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "660bf189-d730-4738-9994-6a03bce4125a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a2cc0b060081d14b3d3f9bfd0377e7dac7428e9d79b4e0ed407748d257fae65e"
+  },
+  "id": "zJFnY35axCvQInrP",
+  "tags": []
+}
